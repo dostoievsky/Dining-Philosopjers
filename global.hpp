@@ -21,9 +21,4 @@ using std::string;
 #define PORT 8080 
 #define N 5
 
-struct shared_data {
-  sem_t spoon;
-  sem_t phil[N];
-  int state[N];
-};
 #endif

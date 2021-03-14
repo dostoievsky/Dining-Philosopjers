@@ -1,17 +1,9 @@
-#include "global.hpp"
-#include <vector>
-#include <sstream>
-#include <iostream>
-#include <iomanip>
-#include <stdint.h>
-
-int socket_Create_and_Conect();
-void printStringSocket(int);
+#include "cliente.hpp"
 
 int main(void) 
 { 
     int filosofos = socket_Create_and_Conect();
-    string buffer;
+
     if (filosofos == -1){
         return 0;
     } 
@@ -39,14 +31,15 @@ int main(void)
             _exit(0);
         }
     }
-    while(1){
-        printStringSocket(filosofos);
-    }
   
     for(i=0;i<N;++i) 
         waitpid(pids[i],NULL,0);
 
-    //while(1){};
+    
+    while(1){
+        printStringSocket(filosofos);
+    }
+    
     return 0;
 }
 
@@ -84,10 +77,10 @@ void printStringSocket(int mensagem){
     uint32_t msgLength;
     recv(mensagem,&msgLength,sizeof(uint32_t),0);
     msgLength = ntohl(msgLength); 
-    std::vector<uint8_t> pkt; 
+    vector<uint8_t> pkt; 
     pkt.resize(msgLength,0x00);
     recv(mensagem,&(pkt[0]),msgLength,0);
-    std::string tmp;
+    string tmp;
     tmp.assign((char*)&(pkt[0]),pkt.size()); 
     cout << tmp << endl;
 }

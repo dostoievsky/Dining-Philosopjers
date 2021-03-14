@@ -7,64 +7,58 @@ int new_socket;
 
 int main(void) 
 {   
-    string msg;
-    int server_fd, buffer;
-    initialize_shared();
-    socket_Create_and_Conect(server_fd, new_socket); 
-    //cout << "CRIOU E CONECTOU" << endl;
-    read(new_socket , &buffer, sizeof(buffer));
-    //cout << "LEU BUFFER" << endl;
-    //cout << buffer << endl;                                                      
-    philosopher(buffer); 
-    finalize_shared();  
+  int server_fd, buffer;
+  initialize_shared();
+  socket_Create_and_Conect(server_fd, new_socket); 
+  read(new_socket , &buffer, sizeof(buffer));
+  philosopher(buffer); 
+  finalize_shared();  
   return 0; 
 } 
 
 
 void socket_Create_and_Conect(int &server_fd, int &new_socket){
-    struct sockaddr_in address; 
-    int opt = 1; 
-    int addrlen = sizeof(address); 
+  struct sockaddr_in address; 
+  int opt = 1; 
+  int addrlen = sizeof(address); 
 
-    // Creating socket file descriptor 
-    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
-    { 
-        perror("socket failed"); 
-        exit(EXIT_FAILURE); 
-    } 
-       
-    // Forcefully attaching socket to the port 8080 
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, 
-                                                  &opt, sizeof(opt))) 
-    { 
-        perror("setsockopt"); 
-        exit(EXIT_FAILURE); 
-    } 
-    address.sin_family = AF_INET; 
-    address.sin_addr.s_addr = INADDR_ANY; 
-    address.sin_port = htons( PORT ); 
-       
-    // Forcefully attaching socket to the port 8080 
-    if (bind(server_fd, (struct sockaddr *)&address,  
-                                 sizeof(address))<0) 
-    { 
-        perror("bind failed"); 
-        exit(EXIT_FAILURE); 
-    } 
-    if (listen(server_fd, 3) < 0) 
-    { 
-        perror("listen"); 
-        exit(EXIT_FAILURE); 
-    } 
-    if ((new_socket = accept(server_fd, (struct sockaddr *)&address,  
-                       (socklen_t*)&addrlen))<0) 
-    { 
-        perror("accept"); 
-        exit(EXIT_FAILURE); 
-    } 
+  // Creating socket file descriptor 
+  if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
+  { 
+      perror("socket failed"); 
+      exit(EXIT_FAILURE); 
+  } 
+      
+  // Forcefully attaching socket to the port 8080 
+  if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, 
+                                                &opt, sizeof(opt))) 
+  { 
+      perror("setsockopt"); 
+      exit(EXIT_FAILURE); 
+  } 
+  address.sin_family = AF_INET; 
+  address.sin_addr.s_addr = INADDR_ANY; 
+  address.sin_port = htons( PORT ); 
+      
+  // Forcefully attaching socket to the port 8080 
+  if (bind(server_fd, (struct sockaddr *)&address,  
+                                sizeof(address))<0) 
+  { 
+      perror("bind failed"); 
+      exit(EXIT_FAILURE); 
+  } 
+  if (listen(server_fd, 3) < 0) 
+  { 
+      perror("listen"); 
+      exit(EXIT_FAILURE); 
+  } 
+  if ((new_socket = accept(server_fd, (struct sockaddr *)&address,  
+                      (socklen_t*)&addrlen))<0) 
+  { 
+      perror("accept"); 
+      exit(EXIT_FAILURE); 
+  } 
 }
-
-
 
 void philosopher(int i)
 {
@@ -82,7 +76,6 @@ void take_spoon(int i)
 {
   sem_wait(&shared->spoon);
   shared->state[i] = HUNGRY;
-  //printf("Filosofo %d tem fome.\n",i+1);
   mensagem = "Filosofo " + std::to_string(i+1) + " tem fome.";
   sendString(mensagem);
   test(i);

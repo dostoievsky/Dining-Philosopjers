@@ -10,15 +10,21 @@
 #define HUNGRY 1
 #define EATING 2
 
+struct shared_data {
+  sem_t spoon;
+  sem_t phil[N];
+  int state[N];
+};
+
 void initialize_shared();
 void finalize_shared();
+
 void socket_Create_and_Conect(int &server_fd, int &new_socket);
 void philosopher(int i);
 void test(int i);
 void take_spoon(int i);
 void put_spoon(int i);
-void initialize_shared(); /* at program start */
-void finalize_shared();
+
 void sendString(const string&);
 
 #endif
