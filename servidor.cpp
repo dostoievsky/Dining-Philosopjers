@@ -1,28 +1,22 @@
 #include "servidor.hpp"
 
-struct shared_data *compartilhado;
+struct shared_data *shared;
 
-std::string mensagem;
+string mensagem;
 int new_socket;
 
 int main(void) 
-{ 
-  initialize_shared();
-  int server_fd, buffer;
-  
-  socket_Create_and_Conect(server_fd, new_socket); 
-  //while(1){  
-    read( new_socket , &buffer, sizeof(buffer));
-    cout << "CHEGOU AQUI";
-    filosofo(buffer);
-  //}
-  //for (int i = 0; i < buffer; i++){
-      //filosofo(i);
-      //send(new_socket, &r, sizeof(r), 0);
-  //}
-  finalize_shared();
-  
-    
+{   
+    string msg;
+    int server_fd, buffer;
+    initialize_shared();
+    socket_Create_and_Conect(server_fd, new_socket); 
+    //cout << "CRIOU E CONECTOU" << endl;
+    read(new_socket , &buffer, sizeof(buffer));
+    //cout << "LEU BUFFER" << endl;
+    //cout << buffer << endl;                                                      
+    philosopher(buffer); 
+    finalize_shared();  
   return 0; 
 } 
 
@@ -70,62 +64,56 @@ void socket_Create_and_Conect(int &server_fd, int &new_socket){
     } 
 }
 
-void *filosofo(int num)
-{
-   while(1)
-   {
-      int i = num;
-      sleep(1);
-      agarraGarfo(i);
-      sleep(1);
-      deixaGarfo(i);
-   }
-}
 
-void agarraGarfo(int nfilosofo)
+
+void philosopher(int i)
 {
-   sem_wait(&compartilhado->colher);
-   compartilhado->estado[nfilosofo] = FOME;
-   mensagem = "Filosofo " + std::to_string(nfilosofo+1) + "tem fome.";
-   send(new_socket, &mensagem, sizeof(mensagem), 0);
-   //printf("Filosofo %d tem fome.\n", nfilosofo+1);
-   //+1 para imprimir filosofo 1 e nao filosofo 0
-   testar(nfilosofo);
-   sem_post(&compartilhado->colher);
-   sem_wait(&compartilhado->filosofo[nfilosofo]);
+  while(1)
+  {
     sleep(1);
+    take_spoon(i);
+    sleep(2);
+    put_spoon(i);
+    sleep(1);
+  }
 }
 
-void deixaGarfo(int nfilosofo)
+void take_spoon(int i)
 {
-  sem_wait(&compartilhado->colher);
-  compartilhado->estado[nfilosofo]=PENSAR;
-  mensagem = "Filosofo " + std::to_string(nfilosofo+1) + " deixou os garfos " + std::to_string(ESQUERDA+1) + " e " + std::to_string(nfilosofo+1);
-  send(new_socket, &mensagem, sizeof(mensagem), 0);
-  //printf("Filosofo %d deixou os garfos %d e %d.\n", nfilosofo+1, ESQUERDA+1, nfilosofo+1);
-  mensagem = "Filosofo " + std::to_string(nfilosofo+1) + " esta a pensar.";
-  send(new_socket, &mensagem, sizeof(mensagem), 0);
-  //printf("Filosofo %d esta a pensar.\n", nfilosofo+1);
-   testar(ESQUERDA);
-   testar(DIREITA);
-   sem_post(&compartilhado->colher);
+  sem_wait(&shared->spoon);
+  shared->state[i] = HUNGRY;
+  //printf("Filosofo %d tem fome.\n",i+1);
+  mensagem = "Filosofo " + std::to_string(i+1) + " tem fome.";
+  sendString(mensagem);
+  test(i);
+  sem_post(&shared->spoon);
+  sem_wait(&shared->phil[i]);
 }
 
-void testar(int nfilosofo)
+void put_spoon(int i)
 {
-   if(compartilhado->estado[nfilosofo]==FOME && compartilhado->estado[ESQUERDA]
- !=COMER && compartilhado->estado[DIREITA]!=COMER)
-   {
-      compartilhado->estado[nfilosofo]=COMER;
-      sleep(1);
-      mensagem = "Filosofo " + std::to_string(nfilosofo+1) + " agarrou os garfos " + std::to_string(ESQUERDA+1) + " e " + std::to_string(nfilosofo+1);
-      send(new_socket, &mensagem, sizeof(mensagem), 0);
-      //printf("Filosofo %d agarrou os garfos %d e %d.\n", nfilosofo+1, ESQUERDA+1, nfilosofo+1);
-      mensagem = "Filosofo " + std::to_string(nfilosofo+1) + " está a comer.";
-      send(new_socket, &mensagem, sizeof(mensagem), 0);
-      //printf("Filosofo %d esta a comer.\n", nfilosofo+1);
-      sem_post(&compartilhado->filosofo[nfilosofo]);
-   }
+  sem_wait(&shared->spoon);
+  shared->state[i] = THINKING;
+  mensagem = "Filosofo " + std::to_string(i+1) + " largou a colher " + std::to_string(LEFT+1) + " e " + std::to_string(i+1) + ".";
+  sendString(mensagem);
+  mensagem = "Filosofo " + std::to_string(i+1) + " está pensando.";
+  sendString(mensagem);
+  test(LEFT);
+  test(RIGHT);
+  sem_post(&shared->spoon);
+}
+
+void test(int i)
+{
+  if( shared->state[i] == HUNGRY && shared->state[LEFT] != EATING && shared->state[RIGHT] != EATING)
+  {
+    shared->state[i] = EATING;
+    mensagem = "Filosofo " + std::to_string(i+1) + " pegou a colher " + std::to_string(LEFT+1) + " e " + std::to_string(i+1) + ".";
+    sendString(mensagem);
+    mensagem = "Filosofo " + std::to_string(i+1) + " está comendo.";
+    sendString(mensagem);
+    sem_post(&shared->phil[i]);
+  }
 }
 
 void initialize_shared()
@@ -133,15 +121,22 @@ void initialize_shared()
   int i;
   int prot=(PROT_READ|PROT_WRITE);
   int flags=(MAP_SHARED|MAP_ANONYMOUS);
-  compartilhado= static_cast<shared_data*>(mmap(0,sizeof(*compartilhado),prot,flags,-1,0));
-  memset(compartilhado,'\0',sizeof(*compartilhado));
-  sem_init(&compartilhado->colher,1,1);
-  for(i=0;i<N;++i) sem_init(&compartilhado->filosofo[i],1,1);
+  shared= static_cast<shared_data*>(mmap(0,sizeof(*shared),prot,flags,-1,0));
+  memset(shared,'\0',sizeof(*shared));
+  sem_init(&shared->spoon,1,1);
+  for(i=0;i<N;++i) sem_init(&shared->phil[i],1,1);
 }
 
 void finalize_shared()
 {
   int i;
-  for(i=0;i<N;++i) sem_destroy(&compartilhado->filosofo[i]);
-  munmap(compartilhado, sizeof(*compartilhado));
+  for(i=0;i<N;++i) sem_destroy(&shared->phil[i]);
+  munmap(shared, sizeof(*shared));
+}
+
+void sendString(const string& mensagem){
+    uint32_t msgLength = mensagem.size();
+    uint32_t sndMsgLength = htonl(msgLength); // Ensure network byte order
+    send(new_socket,&sndMsgLength ,sizeof(uint32_t) ,MSG_CONFIRM); // Send the message length
+    send(new_socket,mensagem.c_str() ,msgLength ,MSG_CONFIRM); // Send the message data 
 }

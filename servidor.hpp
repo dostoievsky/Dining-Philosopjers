@@ -4,23 +4,21 @@
 #include "global.hpp"
 
 #define PENSAR 0
-#define FOME 1
-#define COMER 2
-#define ESQUERDA (nfilosofo+4)%N 
-#define DIREITA (nfilosofo+1)%N 
-
-struct shared_data {
-  sem_t colher;
-  sem_t filosofo[N];
-  int estado[N];
-};
+#define LEFT (i+4)%N
+#define RIGHT (i+1)%N
+#define THINKING 0
+#define HUNGRY 1
+#define EATING 2
 
 void initialize_shared();
 void finalize_shared();
 void socket_Create_and_Conect(int &server_fd, int &new_socket);
-void *filosofo(int num);
-void agarraGarfo(int);
-void deixaGarfo(int);
-void testar(int);
+void philosopher(int i);
+void test(int i);
+void take_spoon(int i);
+void put_spoon(int i);
+void initialize_shared(); /* at program start */
+void finalize_shared();
+void sendString(const string&);
 
 #endif

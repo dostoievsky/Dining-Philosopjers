@@ -1,16 +1,22 @@
 #include "global.hpp"
+#include <vector>
+#include <sstream>
+#include <iostream>
+#include <iomanip>
+#include <stdint.h>
 
 int socket_Create_and_Conect();
-   
+void printStringSocket(int);
+
 int main(void) 
 { 
-    int sock = socket_Create_and_Conect();
-    
-    if (sock == -1){
+    int filosofos = socket_Create_and_Conect();
+    string buffer;
+    if (filosofos == -1){
         return 0;
     } 
 
-    int i, buffer;
+    int i;
     pid_t pid, pids[N]; // process ids
     for(i=0;i<N;++i)
     {
@@ -18,18 +24,14 @@ int main(void)
         if(pid==0)
         {
             // child
-            send(sock, &i, sizeof(i), 0);
-            //while(1){
-                read( sock , &buffer, sizeof(buffer));
-                cout << " " << buffer << " ";
-            //}
+            send(filosofos, &i, sizeof(i), 0);
             _exit(0);
         }
         else if(pid>0)
         {
             // parent
             pids[i] = pid;
-            printf("pids[%d]=%d\n",i,pids[i]);
+            //printf("pids[%d]=%d\n",i,pids[i]);
         }
         else
         {
@@ -37,10 +39,14 @@ int main(void)
             _exit(0);
         }
     }
+    while(1){
+        printStringSocket(filosofos);
+    }
   
     for(i=0;i<N;++i) 
         waitpid(pids[i],NULL,0);
 
+    //while(1){};
     return 0;
 }
 
@@ -72,4 +78,16 @@ int socket_Create_and_Conect()
     }
 
     return sock;  
+}
+
+void printStringSocket(int mensagem){
+    uint32_t msgLength;
+    recv(mensagem,&msgLength,sizeof(uint32_t),0);
+    msgLength = ntohl(msgLength); 
+    std::vector<uint8_t> pkt; 
+    pkt.resize(msgLength,0x00);
+    recv(mensagem,&(pkt[0]),msgLength,0);
+    std::string tmp;
+    tmp.assign((char*)&(pkt[0]),pkt.size()); 
+    cout << tmp << endl;
 }
